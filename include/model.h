@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "common.h"
+#include "gym.h"
 
 #include "tensorflow/core/public/session.h"
 
@@ -22,12 +22,12 @@ class Model
     public:
         Model();
 
-        void fit(const std::vector<observation_t>&,
-                 const std::vector<action_t>&,
-                 const std::vector<float>&);
+        void fit(const std::vector<gym::observation_t>&,
+                 const std::vector<std::vector<float>>&,
+                 const std::vector<gym::reward_t>&);
 
-        action_t predict_policy(const observation_t&);
-        float predict_reward(const observation_t&);
+        std::vector<float> predict_policy(const gym::observation_t&);
+        gym::reward_t predict_reward(const gym::observation_t&);
 
         void save();
 };

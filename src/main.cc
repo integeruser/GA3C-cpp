@@ -11,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "common.h"
 #include "model.h"
 #include "queue.h"
 
@@ -19,7 +18,9 @@
 #include "prettyprint.hpp"
 
 
-const auto ENV_ID = "CartPole-v0";
+using experience_t = std::tuple<gym::observation_t, std::vector<float>, float, gym::observation_t, bool>;
+using memory_t = std::deque<experience_t>;
+
 const auto NUM_AGENTS = 2;
 const auto NUM_EPISODES_PER_AGENT = 100;
 
@@ -57,8 +58,8 @@ experience_t get_sample(const memory_t& memory, float R, int n)
 
 void update(memory_t& memory, float& R, const experience_t& experience)
 {
-    observation_t curr_state, next_state;
-    action_t action;
+    gym::observation_t curr_state, next_state;
+    std::vector<float> action;
     float reward;
     bool done;
     std::tie(curr_state, action, reward, next_state, done) = experience;
@@ -142,13 +143,13 @@ void agent(unsigned i)
 
 void fit(const std::vector<experience_t>& batch)
 {
-    std::vector<observation_t> states;
-    std::vector<action_t> actions;
+    std::vector<gym::observation_t> states;
+    std::vector<std::vector<float>> actions;
     std::vector<float> rewards;
 
     for (const auto& experience: batch) {
-        observation_t curr_state, next_state;
-        action_t action;
+        gym::observation_t curr_state, next_state;
+        std::vector<float> action;
         float reward;
         bool done;
         std::tie(curr_state, action, reward, next_state, done) = experience;

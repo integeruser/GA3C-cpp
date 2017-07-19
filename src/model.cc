@@ -30,9 +30,9 @@ Model::Model():
 }
 
 
-void Model::fit(const std::vector<observation_t>& states,
-                const std::vector<action_t>& actions,
-                const std::vector<float>& rewards)
+void Model::fit(const std::vector<gym::observation_t>& states,
+                const std::vector<std::vector<float>>& actions,
+                const std::vector<gym::reward_t>& rewards)
 {
     assert(states.size() == actions.size() and actions.size() == rewards.size());
 
@@ -71,7 +71,7 @@ void Model::fit(const std::vector<observation_t>& states,
 }
 
 
-action_t Model::predict_policy(const observation_t& state)
+std::vector<float> Model::predict_policy(const gym::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
@@ -85,7 +85,7 @@ action_t Model::predict_policy(const observation_t& state)
     TF_CHECK_OK(session->Run(inputs, {"out_policies/Softmax:0"}, {}, &outputs));
 
     const auto out_policies_eigentensor = outputs[0].flat<float>();
-    action_t out_policies(out_policies_eigentensor.size());
+    std::vector<float> out_policies(out_policies_eigentensor.size());
     for (auto i = 0; i < out_policies.size(); ++i) {
         out_policies[i] = out_policies_eigentensor(i);
     }
@@ -94,7 +94,7 @@ action_t Model::predict_policy(const observation_t& state)
     return out_policies;
 }
 
-float Model::predict_reward(const observation_t& state)
+gym::reward_t Model::predict_reward(const gym::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
