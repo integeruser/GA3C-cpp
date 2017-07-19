@@ -21,8 +21,9 @@
 using experience_t = std::tuple<gym::observation_t, std::vector<float>, float, gym::observation_t, bool>;
 using memory_t = std::deque<experience_t>;
 
-const auto NUM_AGENTS = 2;
-const auto NUM_EPISODES_PER_AGENT = 100;
+const auto NUM_AGENTS = 1;
+const auto NUM_TRAINING_STEPS = 1000;
+int steps_done = 0;
 
 const auto BATCH_SIZE = 32;
 const auto N_STEP_RETURN = 8;
@@ -73,6 +74,7 @@ void update(memory_t& memory, float& R, const experience_t& experience)
             const auto n = memory.size();
             const auto experience = get_sample(memory, R, n);
             experiences_queue.push(experience);
+            ++steps_done;
 
             const auto reward = std::get<2>(memory[0]);
             R = (R - reward) / DISCOUNT;
@@ -84,6 +86,7 @@ void update(memory_t& memory, float& R, const experience_t& experience)
     if (memory.size() >= N_STEP_RETURN) {
         const auto experience = get_sample(memory, R, N_STEP_RETURN);
         experiences_queue.push(experience);
+        ++steps_done;
 
         const auto reward = std::get<2>(memory[0]);
         R = (R - reward);
@@ -113,17 +116,21 @@ void agent(unsigned i)
     float R = 0.0f;
 
     const bool render = false;
-    for (auto episode = 0; episode < NUM_EPISODES_PER_AGENT; ++episode) {
+    unsigned episode = 0;
+    while (true) {
+        ++episode;
         std::vector<float> curr_state, next_state;
         curr_state = env.reset();
 
-        float t = (float)episode / (NUM_EPISODES_PER_AGENT-1);
+        float t = (float)steps_done / (NUM_TRAINING_STEPS-1);
         float epsilon = (1-t)*EPSILON_START + t*EPSILON_END;
 
         float reward = 0.0f;
         float episode_reward = 0.0f;
         bool done = false;
         while (!done) {
+            if (steps_done > NUM_TRAINING_STEPS) {return;}
+
             const auto action = pick_action(env, curr_state, epsilon);
             std::tie(next_state, reward, done) = env.step(action);
             episode_reward += reward;
@@ -131,8 +138,6 @@ void agent(unsigned i)
             experience_t experience = {curr_state, one_hot_encode(action), reward, next_state, done};
             update(memory, R, experience);
             curr_state = next_state;
-
-            // std::this_thread::sleep_for(std::chrono::milliseconds(10)); // TODO
         }
         std::cout << episode << ": " << episode_reward << std::endl;
     }
@@ -165,9 +170,11 @@ void fit(const std::vector<experience_t>& batch)
 
 void trainer()
 {
-    while (true) {
-        auto batch = std::vector<experience_t>(BATCH_SIZE);
-        for (auto i = 0; i < BATCH_SIZE; ++i) {
+    while (steps_done < NUM_TRAINING_STEPS) {
+        const auto batch_size = std::min(BATCH_SIZE, NUM_TRAINING_STEPS-steps_done);
+
+        auto batch = std::vector<experience_t>(batch_size);
+        for (int i = 0; i < batch.size(); ++i) {
             batch[i] = experiences_queue.pop();
         }
         fit(batch);
@@ -184,18 +191,16 @@ int main(int argc, char const *argv[])
 
     // start the agents
     auto agents_threads = std::vector<std::thread>(NUM_AGENTS);
-    for (auto i = 0; i < NUM_AGENTS; ++i) {
+    for (int i = 0; i < NUM_AGENTS; ++i) {
         agents_threads[i] = std::thread(agent, i);
     }
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
-
     // and wait for them to finish
-    for (auto i = 0; i < NUM_AGENTS; ++i) {
+    trainer_thread.join();
+    for (int i = 0; i < NUM_AGENTS; ++i) {
         agents_threads[i].join();
     }
 
-    // quit not-so-gracefully
+    // save the trained model
     // model.save();
-    std::exit(0);
 }
