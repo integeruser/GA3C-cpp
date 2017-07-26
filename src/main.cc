@@ -15,7 +15,6 @@
 #include "queue.h"
 
 #include "gym.h"
-#include "prettyprint.hpp"
 
 
 using experience_t = std::tuple<gym::observation_t, std::vector<float>, float, gym::observation_t, bool>;
