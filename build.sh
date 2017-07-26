@@ -9,6 +9,7 @@ if [[ ! -d $TENSORFLOW_DIR ]] || [[ ! -d $GYM_UDS_API_DIR ]] ; then
 fi
 
 rm -f include/gym-uds.pb.h src/gym-uds.pb.cc
+$TENSORFLOW_DIR/bazel-out/host/bin/external/protobuf/protoc --python_out=$GYM_UDS_API_DIR --proto_path=$GYM_UDS_API_DIR $GYM_UDS_API_DIR/gym-uds.proto
 $TENSORFLOW_DIR/bazel-out/host/bin/external/protobuf/protoc --cpp_out=. --proto_path=$GYM_UDS_API_DIR $GYM_UDS_API_DIR/gym-uds.proto
 mv gym-uds.pb.h include && mv gym-uds.pb.cc src
 cp $GYM_UDS_API_DIR/binding-cpp/include/gym.h include && cp $GYM_UDS_API_DIR/binding-cpp/src/gym.cc src
