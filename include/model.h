@@ -24,10 +24,10 @@ class Model
 
         void fit(const std::vector<gym::observation_t>&,
                  const std::vector<std::vector<float>>&,
-                 const std::vector<gym::reward_t>&);
+                 const std::vector<float>&);
 
         std::vector<float> predict_policy(const gym::observation_t&);
-        gym::reward_t predict_reward(const gym::observation_t&);
+        float predict_reward(const gym::observation_t&);
 
         void save();
 };

@@ -32,7 +32,7 @@ Model::Model():
 
 void Model::fit(const std::vector<gym::observation_t>& states,
                 const std::vector<std::vector<float>>& actions,
-                const std::vector<gym::reward_t>& rewards)
+                const std::vector<float>& rewards)
 {
     assert(states.size() == actions.size() and actions.size() == rewards.size());
 
@@ -94,7 +94,7 @@ std::vector<float> Model::predict_policy(const gym::observation_t& state)
     return out_policies;
 }
 
-gym::reward_t Model::predict_reward(const gym::observation_t& state)
+float Model::predict_reward(const gym::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
