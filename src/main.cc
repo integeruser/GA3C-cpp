@@ -17,8 +17,7 @@
 
 #include "gym.h"
 
-using encoded_action_t = std::vector<float>;
-using experience_t = std::tuple<gym::observation_t, encoded_action_t, float, gym::observation_t, bool>;
+using experience_t = std::tuple<gym::observation_t, gym::action_t, float, gym::observation_t, bool>;
 using memory_t = std::deque<experience_t>;
 
 const auto NUM_AGENTS = 1;
@@ -41,13 +40,6 @@ std::mt19937 generator(1337);
 /******************************************************************************/
 /******************************************************************************/
 
-std::vector<float> one_hot_encode(gym::action_t action)
-{
-    std::vector<float> encoded_action(2, 0.0f); // TODO
-    encoded_action[action] = 1.0f;
-    return encoded_action;
-}
-
 experience_t get_sample(const memory_t& memory, float R, int n)
 {
     const auto curr_state = std::get<0>(memory[0]);
@@ -60,7 +52,7 @@ experience_t get_sample(const memory_t& memory, float R, int n)
 void update(memory_t& memory, float& R, const experience_t& experience)
 {
     gym::observation_t curr_state, next_state;
-    std::vector<float> action;
+    gym::action_t action;
     float reward;
     bool done;
     std::tie(curr_state, action, reward, next_state, done) = experience;
@@ -135,7 +127,7 @@ void agent(uint32_t i)
             std::tie(next_state, reward, done) = env.step(action);
             episode_reward += reward;
 
-            experience_t experience = {curr_state, one_hot_encode(action), reward, next_state, done};
+            experience_t experience = {curr_state, action, reward, next_state, done};
             update(memory, R, experience);
             curr_state = next_state;
         }
@@ -149,12 +141,12 @@ void agent(uint32_t i)
 void fit(const std::vector<experience_t>& batch)
 {
     std::vector<gym::observation_t> states;
-    std::vector<std::vector<float>> actions;
+    std::vector<gym::action_t> actions;
     std::vector<float> rewards;
 
     for (const auto& experience: batch) {
         gym::observation_t curr_state, next_state;
-        std::vector<float> action;
+        gym::action_t action;
         float reward;
         bool done;
         std::tie(curr_state, action, reward, next_state, done) = experience;

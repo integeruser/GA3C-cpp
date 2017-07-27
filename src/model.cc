@@ -15,23 +15,30 @@ Model::Model():
     session(tf::NewSession( {}))
 {
     // create the graph
-    tf::MetaGraphDef metagraph_def;
-    TF_CHECK_OK(ReadBinaryProto(tf::Env::Default(), metagraph_filepath, &metagraph_def));
-    TF_CHECK_OK(session->Create(metagraph_def.graph_def()));
+    tf::MetaGraphDef meta_graph_def;
+    TF_CHECK_OK(ReadBinaryProto(tf::Env::Default(), meta_graph_filepath, &meta_graph_def));
+    TF_CHECK_OK(session->Create(meta_graph_def.graph_def()));
 
     // and restore the values of its variables
     auto graph_filepath_tensor = tf::Tensor(tf::DT_STRING, {});
     graph_filepath_tensor.scalar<tf::string>()() = graph_filepath;
 
     std::vector<std::pair<tf::string, tf::Tensor>> inputs = {
-        {metagraph_def.saver_def().filename_tensor_name(), graph_filepath_tensor}
+        {meta_graph_def.saver_def().filename_tensor_name(), graph_filepath_tensor}
     };
-    TF_CHECK_OK(session->Run(inputs, {}, {metagraph_def.saver_def().restore_op_name()}, nullptr));
+    TF_CHECK_OK(session->Run(inputs, {}, {meta_graph_def.saver_def().restore_op_name()}, nullptr));
 }
 
 
+std::vector<float> one_hot_encode(gym::action_t action)
+{
+    std::vector<float> encoded_action(NUM_ACTIONS, 0.0f);
+    encoded_action[action] = 1.0f;
+    return encoded_action;
+}
+
 void Model::fit(const std::vector<gym::observation_t>& states,
-                const std::vector<std::vector<float>>& actions,
+                const std::vector<gym::action_t>& actions,
                 const std::vector<float>& rewards)
 {
     assert(states.size() == actions.size() and actions.size() == rewards.size());
@@ -50,7 +57,7 @@ void Model::fit(const std::vector<gym::observation_t>& states,
     auto actions_tensor = tf::Tensor(tf::DT_FLOAT, {static_cast<long long>(actions.size()), NUM_ACTIONS});
     auto actions_eigenmatrix = actions_tensor.matrix<float>();
     for (auto i = 0; i < actions.size(); ++i) {
-        const auto action = actions[i];
+        const auto action = one_hot_encode(actions[i]);
         for (auto j = 0; j < action.size(); ++j) {
             actions_eigenmatrix(i, j) = action[j];
         }

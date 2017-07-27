@@ -16,14 +16,14 @@ class Model
 {
     private:
         const std::string graph_filepath = "models/graph";
-        const std::string metagraph_filepath = "models/graph.meta";
+        const std::string meta_graph_filepath = "models/graph.meta";
         std::unique_ptr<tf::Session> session;
 
     public:
         Model();
 
         void fit(const std::vector<gym::observation_t>&,
-                 const std::vector<std::vector<float>>&,
+                 const std::vector<gym::action_t>&,
                  const std::vector<float>&);
 
         std::vector<float> predict_policy(const gym::observation_t&);
