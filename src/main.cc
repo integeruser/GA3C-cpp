@@ -12,12 +12,11 @@
 #include <utility>
 #include <vector>
 
+#include "environment.h"
 #include "model.h"
 #include "queue.h"
 
-#include "gym.h"
-
-using experience_t = std::tuple<gym::observation_t, gym::action_t, float, gym::observation_t, bool>;
+using experience_t = std::tuple<observation_t, action_t, float, observation_t, bool>;
 using memory_t = std::deque<experience_t>;
 
 
@@ -33,10 +32,9 @@ const float DISCOUNT_N = std::pow(DISCOUNT, N_STEP_RETURN);
 const float EPSILON_START = 1.00f;
 const float EPSILON_END   = 0.15f;
 
-Model model;
+DummyModel model;
 Queue<experience_t> experiences_queue;
 uint32_t training_steps_done = 0;
-
 std::mt19937 rand_engine(1337);
 
 /******************************************************************************/
@@ -52,8 +50,8 @@ experience_t get_sample(const memory_t& memory, float R, int n)
 
 void update(memory_t& memory, float& R, const experience_t& experience)
 {
-    gym::observation_t curr_state, next_state;
-    gym::action_t action;
+    observation_t curr_state, next_state;
+    action_t action;
     float reward;
     bool done;
     std::tie(curr_state, action, reward, next_state, done) = experience;
@@ -89,7 +87,7 @@ void update(memory_t& memory, float& R, const experience_t& experience)
     // possible edge case - if an episode ends in <N steps, the computation is incorrect
 }
 
-gym::action_t pick_action(gym::Environment& env, const gym::observation_t& state, float epsilon)
+action_t pick_action(Environment& env, const observation_t& state, float epsilon)
 {
     if (std::uniform_real_distribution<float>(0.0f, 1.0f)(rand_engine) < epsilon) {
         return env.sample();
@@ -102,13 +100,13 @@ gym::action_t pick_action(gym::Environment& env, const gym::observation_t& state
 
 void agent(uint32_t i)
 {
-    auto env = gym::Environment("/tmp/gym-uds-socket-GA3C-" + std::to_string(i));
+    auto env = DummyEnvironment();
 
     memory_t memory;
     float R = 0.0f;
 
     for (uint32_t episode = 1; true; ++episode) {
-        gym::observation_t curr_state, next_state;
+        observation_t curr_state, next_state;
         curr_state = env.reset();
 
         float t = (float)training_steps_done / (NUM_TRAINING_STEPS-1);
@@ -138,13 +136,13 @@ void agent(uint32_t i)
 
 void fit(const std::vector<experience_t>& batch)
 {
-    std::vector<gym::observation_t> states;
-    std::vector<gym::action_t> actions;
+    std::vector<observation_t> states;
+    std::vector<action_t> actions;
     std::vector<float> rewards;
 
     for (const auto& experience: batch) {
-        gym::observation_t curr_state, next_state;
-        gym::action_t action;
+        observation_t curr_state, next_state;
+        action_t action;
         float reward;
         bool done;
         std::tie(curr_state, action, reward, next_state, done) = experience;
