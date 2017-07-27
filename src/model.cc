@@ -2,13 +2,15 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
+#include <vector>
 
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/protobuf/meta_graph.pb.h"
 
 
-const auto NUM_STATES  = 4;
-const auto NUM_ACTIONS = 2;
+const uint32_t NUM_STATES  = 4;
+const uint32_t NUM_ACTIONS = 2;
 
 
 Model::Model():
@@ -123,5 +125,9 @@ void Model::save()
 {
     auto graph_filepath_tensor = tf::Tensor(tf::DT_STRING, {});
     graph_filepath_tensor.scalar<tf::string>()() = graph_filepath;
-    TF_CHECK_OK(session->Run({{"save/Const:0", graph_filepath_tensor}}, {}, {"save/control_dependency:0"}, nullptr));
+
+    std::vector<std::pair<tf::string, tf::Tensor>> inputs = {
+        {"save/Const:0", graph_filepath_tensor}
+    };
+    TF_CHECK_OK(session->Run(inputs, {}, {"save/control_dependency:0"}, nullptr));
 }
