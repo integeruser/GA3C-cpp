@@ -2,7 +2,7 @@
 #include <deque>
 #include <mutex>
 
-// https://stackoverflow.com/questions/12805041/c-equivalent-to-javas-blockingqueue
+/* https://stackoverflow.com/questions/12805041/c-equivalent-to-javas-blockingqueue */
 
 template <typename T>
 class Queue

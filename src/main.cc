@@ -20,24 +20,25 @@
 using experience_t = std::tuple<gym::observation_t, gym::action_t, float, gym::observation_t, bool>;
 using memory_t = std::deque<experience_t>;
 
-const auto NUM_AGENTS = 1;
-const auto NUM_TRAINING_STEPS = 1000;
 
-const auto BATCH_SIZE = 32;
-const auto N_STEP_RETURN = 8;
-const auto DISCOUNT = 0.99f;
-const auto DISCOUNT_N = std::pow(DISCOUNT, N_STEP_RETURN);
+const uint32_t NUM_AGENTS = 3;
+const uint32_t NUM_TRAINING_STEPS = 1000;
 
-const auto EPSILON_START = 1.00f;
-const auto EPSILON_END = 0.15f;
+const uint32_t BATCH_SIZE = 32;
+
+const uint32_t N_STEP_RETURN = 8;
+const float DISCOUNT   = 0.99f;
+const float DISCOUNT_N = std::pow(DISCOUNT, N_STEP_RETURN);
+
+const float EPSILON_START = 1.00f;
+const float EPSILON_END   = 0.15f;
 
 Model model;
 Queue<experience_t> experiences_queue;
-int training_steps_done = 0;
+uint32_t training_steps_done = 0;
 
-std::mt19937 generator(1337);
+std::mt19937 rand_engine(1337);
 
-/******************************************************************************/
 /******************************************************************************/
 
 experience_t get_sample(const memory_t& memory, float R, int n)
@@ -90,13 +91,12 @@ void update(memory_t& memory, float& R, const experience_t& experience)
 
 gym::action_t pick_action(gym::Environment& env, const gym::observation_t& state, float epsilon)
 {
-    if (std::uniform_real_distribution<float>(0.0f, 1.0f)(generator) < epsilon) {
+    if (std::uniform_real_distribution<float>(0.0f, 1.0f)(rand_engine) < epsilon) {
         return env.sample();
     }
     else {
         const auto actions_probs = model.predict_policy(state);
-        auto disc_dist = std::discrete_distribution<float>(actions_probs.cbegin(), actions_probs.cend());
-        return disc_dist(generator);
+        return std::discrete_distribution<float>(actions_probs.cbegin(), actions_probs.cend())(rand_engine);
     }
 }
 
@@ -107,10 +107,7 @@ void agent(uint32_t i)
     memory_t memory;
     float R = 0.0f;
 
-    const bool render = false;
-    uint32_t episode = 0;
-    while (true) {
-        ++episode;
+    for (uint32_t episode = 1; true; ++episode) {
         gym::observation_t curr_state, next_state;
         curr_state = env.reset();
 
@@ -119,6 +116,7 @@ void agent(uint32_t i)
 
         float reward = 0.0f;
         float episode_reward = 0.0f;
+
         bool done = false;
         while (!done) {
             if (training_steps_done > NUM_TRAINING_STEPS) { return; }
@@ -129,13 +127,13 @@ void agent(uint32_t i)
 
             experience_t experience = {curr_state, action, reward, next_state, done};
             update(memory, R, experience);
+
             curr_state = next_state;
         }
         std::cout << episode << ": " << episode_reward << std::endl;
     }
 }
 
-/******************************************************************************/
 /******************************************************************************/
 
 void fit(const std::vector<experience_t>& batch)
@@ -174,7 +172,6 @@ void trainer()
 }
 
 /******************************************************************************/
-/******************************************************************************/
 
 int main(int argc, char const *argv[])
 {
@@ -188,10 +185,10 @@ int main(int argc, char const *argv[])
     }
 
     // and wait for them to finish
-    trainer_thread.join();
     for (auto i = 0; i < NUM_AGENTS; ++i) {
         agents_threads[i].join();
     }
+    trainer_thread.join();
 
     // save the trained model
     model.save();

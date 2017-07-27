@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "gym.h"
-
 #include "tensorflow/core/public/session.h"
 
 namespace tf = tensorflow;
