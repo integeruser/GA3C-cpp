@@ -14,11 +14,26 @@ This project requires any recent version of Google's [TensorFlow](https://www.te
 2. Run `./build.sh <path_to_tensorflow_repo>` to copy the necessary C++ headers and sources
 
 ## Usage
-1. Build the binary:
+1. Generate the TensorFlow model:
 ```
-/o/GA3C-tf-cpp $ make
-clang++ -std=c++11 -O2 -pthread -o GAC3 \
-	-I include -I include/third_party -l tensorflow_cc \
-	src/gym.cc src/gym-uds.pb.cc src/model.cc src/main.cc
+/o/GA3C-tf-cpp $ python3 model.py generate
 ```
-2. Run it
+2. Train the agent:
+```
+/o/GA3C-tf-cpp $ ./start-gym-uds-servers.sh
+/o/GA3C-tf-cpp $ make -B
+mkdir -p bin
+c++ -std=c++11 -O2 -pthread -o bin/GAC3 -l tensorflow_cc \
+    -I include -I gym-uds-api/binding-cpp/include -I include/third_party \
+    gym-uds-api/binding-cpp/src/gym-uds.cc gym-uds-api/binding-cpp/src/gym-uds.pb.cc src/*.cc
+/o/GA3C-tf-cpp $ time bin/GAC3
+[...]
+248: 200
+229: 200
+219: 200
+        9.34 real        15.05 user         9.04 sys
+```
+3. Test it:
+```
+/o/GA3C-tf-cpp $ python3 model.py test
+```
