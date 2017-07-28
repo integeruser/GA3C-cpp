@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 cd $(dirname $(realpath $0))
 
-TENSORFLOW_DIR="/opt/tensorflow"
+TENSORFLOW_DIR=$1
 if [[ ! -d $TENSORFLOW_DIR ]] ; then
     echo "TENSORFLOW_DIR not found!"
     exit 1
