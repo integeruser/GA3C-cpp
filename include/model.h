@@ -5,38 +5,33 @@
 #include <string>
 #include <vector>
 
-#include "environment.h"
+#include "gym-uds.h"
+#include "tensorflow/core/protobuf/meta_graph.pb.h"
+#include "tensorflow/core/public/session.h"
+
+namespace tf = tensorflow;
 
 
 class Model
 {
+    private:
+        const std::string graph_filepath = "models/graph";
+        const std::string meta_graph_filepath = "models/graph.meta";
+        tf::MetaGraphDef meta_graph_def;
+        std::unique_ptr<tf::Session> session;
+
     public:
-        virtual ~Model() {}
+        Model();
 
-        virtual void fit(const std::vector<observation_t>&,
-                         const std::vector<action_t>&,
-                         const std::vector<float>&)=0;
+        void fit(const std::vector<gym_uds::observation_t>&,
+                 const std::vector<gym_uds::action_t>&,
+                 const std::vector<float>&);
 
-        virtual std::vector<float> predict_policy(const observation_t&)=0;
-        virtual float predict_reward(const observation_t&)=0;
+        std::vector<float> predict_policy(const gym_uds::observation_t&);
+        float predict_reward(const gym_uds::observation_t&);
 
-        virtual void save()=0;
-        virtual void restore()=0;
-};
-
-
-class DummyModel : public Model
-{
-    public:
-        void fit(const std::vector<observation_t>&,
-                 const std::vector<action_t>&,
-                 const std::vector<float>&) {}
-
-        std::vector<float> predict_policy(const observation_t&) { return std::vector<float>(); }
-        float predict_reward(const observation_t&) { return float(); }
-
-        void save() {}
-        void restore() {}
+        void save();
+        void restore();
 };
 
 

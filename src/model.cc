@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-#include "gym.h"
+#include "gym-uds.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/protobuf/meta_graph.pb.h"
 #include "tensorflow/core/public/session.h"
@@ -24,15 +24,15 @@ Model::Model():
 }
 
 
-std::vector<float> one_hot_encode(gym::action_t action)
+std::vector<float> one_hot_encode(gym_uds::action_t action)
 {
     std::vector<float> encoded_action(NUM_ACTIONS, 0.0f);
     encoded_action[action] = 1.0f;
     return encoded_action;
 }
 
-void Model::fit(const std::vector<gym::observation_t>& states,
-                const std::vector<gym::action_t>& actions,
+void Model::fit(const std::vector<gym_uds::observation_t>& states,
+                const std::vector<gym_uds::action_t>& actions,
                 const std::vector<float>& rewards)
 {
     assert(states.size() == actions.size() and actions.size() == rewards.size());
@@ -72,7 +72,7 @@ void Model::fit(const std::vector<gym::observation_t>& states,
 }
 
 
-std::vector<float> Model::predict_policy(const gym::observation_t& state)
+std::vector<float> Model::predict_policy(const gym_uds::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
@@ -95,7 +95,7 @@ std::vector<float> Model::predict_policy(const gym::observation_t& state)
     return out_policies;
 }
 
-float Model::predict_reward(const gym::observation_t& state)
+float Model::predict_reward(const gym_uds::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
