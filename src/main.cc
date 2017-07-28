@@ -20,8 +20,8 @@ using experience_t = std::tuple<gym_uds::observation_t, gym_uds::action_t, float
 using memory_t = std::deque<experience_t>;
 
 
-const uint32_t NUM_AGENTS = 3;
-const uint32_t NUM_TRAINING_STEPS = 1000;
+const uint32_t NUM_AGENTS = 5;
+const uint32_t NUM_TRAINING_STEPS = 75000;
 
 const uint32_t BATCH_SIZE = 32;
 
