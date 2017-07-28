@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include "gym-uds.h"
@@ -11,17 +12,8 @@
 #include "tensorflow/core/public/session.h"
 
 
-const uint32_t NUM_STATES  = 4;
+const uint32_t NUM_OBSERVATIONS = 4;
 const uint32_t NUM_ACTIONS = 2;
-
-
-Model::Model():
-    session(tf::NewSession( {}))
-{
-    TF_CHECK_OK(ReadBinaryProto(tf::Env::Default(), meta_graph_filepath, &meta_graph_def));
-    TF_CHECK_OK(session->Create(meta_graph_def.graph_def()));
-    restore();
-}
 
 
 std::vector<float> one_hot_encode(gym_uds::action_t action)
@@ -31,6 +23,24 @@ std::vector<float> one_hot_encode(gym_uds::action_t action)
     return encoded_action;
 }
 
+
+Model::Model():
+    session(tf::NewSession( {}))
+{
+    TF_CHECK_OK(ReadBinaryProto(tf::Env::Default(), META_GRAPH_FILEPATH, &meta_graph_def));
+    TF_CHECK_OK(session->Create(meta_graph_def.graph_def()));
+
+    // restore variables values
+    auto graph_filepath_tensor = tf::Tensor(tf::DT_STRING, {});
+    graph_filepath_tensor.scalar<tf::string>()() = GRAPH_FILEPATH;
+
+    std::vector<std::pair<tf::string, tf::Tensor>> inputs = {
+        {meta_graph_def.saver_def().filename_tensor_name(), graph_filepath_tensor}
+    };
+    TF_CHECK_OK(session->Run(inputs, {}, {meta_graph_def.saver_def().restore_op_name()}, nullptr));
+}
+
+
 void Model::fit(const std::vector<gym_uds::observation_t>& states,
                 const std::vector<gym_uds::action_t>& actions,
                 const std::vector<float>& rewards)
@@ -38,7 +48,7 @@ void Model::fit(const std::vector<gym_uds::observation_t>& states,
     assert(states.size() == actions.size() and actions.size() == rewards.size());
 
     // fill the states tensor
-    auto states_tensor = tf::Tensor(tf::DT_FLOAT, {static_cast<long long>(states.size()), NUM_STATES});
+    auto states_tensor = tf::Tensor(tf::DT_FLOAT, {static_cast<long long>(states.size()), NUM_OBSERVATIONS});
     auto states_eigenmatrix = states_tensor.matrix<float>();
     for (auto i = 0; i < states.size(); ++i) {
         const auto state = states[i];
@@ -75,7 +85,7 @@ void Model::fit(const std::vector<gym_uds::observation_t>& states,
 std::vector<float> Model::predict_policy(const gym_uds::observation_t& state)
 {
     // fill the state tensor
-    auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
+    auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_OBSERVATIONS});
     std::copy_n(state.cbegin(), state.size(), state_tensor.flat<float>().data());
 
     // predict output
@@ -98,7 +108,7 @@ std::vector<float> Model::predict_policy(const gym_uds::observation_t& state)
 float Model::predict_reward(const gym_uds::observation_t& state)
 {
     // fill the state tensor
-    auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_STATES});
+    auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_OBSERVATIONS});
     std::copy_n(state.cbegin(), state.size(), state_tensor.flat<float>().data());
 
     // predict output
@@ -116,21 +126,10 @@ float Model::predict_reward(const gym_uds::observation_t& state)
 void Model::save()
 {
     auto graph_filepath_tensor = tf::Tensor(tf::DT_STRING, {});
-    graph_filepath_tensor.scalar<tf::string>()() = graph_filepath;
+    graph_filepath_tensor.scalar<tf::string>()() = GRAPH_FILEPATH;
 
     std::vector<std::pair<tf::string, tf::Tensor>> inputs = {
         {"save/Const:0", graph_filepath_tensor}
     };
     TF_CHECK_OK(session->Run(inputs, {}, {"save/control_dependency:0"}, nullptr));
-}
-
-void Model::restore()
-{
-    auto graph_filepath_tensor = tf::Tensor(tf::DT_STRING, {});
-    graph_filepath_tensor.scalar<tf::string>()() = graph_filepath;
-
-    std::vector<std::pair<tf::string, tf::Tensor>> inputs = {
-        {meta_graph_def.saver_def().filename_tensor_name(), graph_filepath_tensor}
-    };
-    TF_CHECK_OK(session->Run(inputs, {}, {meta_graph_def.saver_def().restore_op_name()}, nullptr));
 }

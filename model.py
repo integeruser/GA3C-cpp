@@ -3,6 +3,9 @@ import argparse
 
 import tensorflow as tf
 
+ENV_ID = 'CartPole-v0'
+GRAPH_FILEPATH = 'models/graph'
+
 NUM_OBSERVATIONS = 4
 NUM_ACTIONS = 2
 
@@ -45,12 +48,10 @@ class Model:
         return self.session.run(self.out_policies, feed_dict={self.x_states: [state]})[0]
 
     def save(self, path):
-        saver = tf.train.Saver()
-        saver.save(self.session, path)
+        tf.train.Saver().save(self.session, path)
 
     def restore(self, path):
-        saver = tf.train.Saver()
-        saver.restore(self.session, path)
+        tf.train.Saver().restore(self.session, path)
 
 
 if __name__ == '__main__':
@@ -60,22 +61,25 @@ if __name__ == '__main__':
 
     model = Model()
     if args.action == 'generate':
-        model.save('models/graph')
+        model.save(GRAPH_FILEPATH)
     elif args.action == 'test':
         import gym
         import numpy as np
 
-        model.restore('models/graph')
+        model.restore(GRAPH_FILEPATH)
 
-        env = gym.make('CartPole-v0')
+        env = gym.make(ENV_ID)
         for _ in range(5):
             curr_state = env.reset()
             env.render()
 
+            episode_reward = 0
             done = False
             while not done:
                 action = np.argmax(model.predict_policy(curr_state))
                 next_state, reward, done, _ = env.step(action)
+                episode_reward += reward
                 env.render()
 
                 curr_state = next_state
+            print(episode_reward)

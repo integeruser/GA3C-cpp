@@ -15,8 +15,9 @@ namespace tf = tensorflow;
 class Model
 {
     private:
-        const std::string graph_filepath = "models/graph";
-        const std::string meta_graph_filepath = "models/graph.meta";
+        const std::string GRAPH_FILEPATH = "models/graph";
+        const std::string META_GRAPH_FILEPATH = "models/graph.meta";
+
         tf::MetaGraphDef meta_graph_def;
         std::unique_ptr<tf::Session> session;
 
@@ -31,7 +32,6 @@ class Model
         float predict_reward(const gym_uds::observation_t&);
 
         void save();
-        void restore();
 };
 
 
