@@ -1,0 +1,3 @@
+[submodule "gym-uds-api"]
+	path = gym-uds-api
+	url = https://github.com/integeruser/gym-uds-api.git
