@@ -4,42 +4,45 @@ import argparse
 import tensorflow as tf
 
 ENV_ID = 'CartPole-v0'
-GRAPH_FILEPATH = 'models/graph'
-
 NUM_OBSERVATIONS = 4
 NUM_ACTIONS = 2
+
+LOSS_VALUE = 0.50
+LOSS_ENTROPY = 0.01
 
 LEARNING_RATE = 0.005
 DECAY = 0.99
 
-LOSS_V = 0.50
-LOSS_ENTROPY = 0.01
-
 
 class Model:
+    GRAPH_FILEPATH = 'models/graph'
+
     def __init__(self):
         self.x_states = tf.placeholder(tf.float32, shape=(None, NUM_OBSERVATIONS), name='x_states')
         self.y_policies = tf.placeholder(tf.float32, shape=(None, NUM_ACTIONS), name='y_policies')
         self.y_values = tf.placeholder(tf.float32, shape=(None, 1), name='y_values')
 
-        hidden = tf.layers.dense(inputs=self.x_states, units=16, activation=tf.nn.relu)
+        hidden_layer = tf.layers.dense(inputs=self.x_states, units=16, activation=tf.nn.relu)
+
         self.out_policies = tf.layers.dense(
-            inputs=hidden, units=NUM_ACTIONS, activation=tf.nn.softmax, name='out_policies')
-        self.out_values = tf.layers.dense(inputs=hidden, units=1, name='out_values')
+            inputs=hidden_layer, units=NUM_ACTIONS, activation=tf.nn.softmax, name='out_policies')
+        self.out_values = tf.layers.dense(inputs=hidden_layer, units=1, name='out_values')
+
+        epsilon = 1e-10
 
         log_prob = tf.log(
-            tf.reduce_sum(self.y_policies * self.out_policies, axis=1, keep_dims=True) + 1e-10)
+            tf.reduce_sum(self.y_policies * self.out_policies, axis=1, keep_dims=True) + epsilon)
         advantage = self.y_values - self.out_values
 
         policy_loss = -log_prob * tf.stop_gradient(advantage)
-        value_loss = LOSS_V * tf.square(advantage)
+        value_loss = LOSS_VALUE * tf.square(advantage)
         entropy = LOSS_ENTROPY * tf.reduce_sum(
-            self.y_policies * tf.log(self.y_policies + 1e-10), axis=1, keep_dims=True)
+            self.y_policies * tf.log(self.y_policies + epsilon), axis=1, keep_dims=True)
 
-        loss_total = tf.reduce_mean(policy_loss + value_loss + entropy)
+        total_loss = tf.reduce_mean(policy_loss + value_loss + entropy)
         minimize_op = tf.train.RMSPropOptimizer(
             LEARNING_RATE, decay=DECAY).minimize(
-                loss_total, name='minimize')
+                total_loss, name='minimize')
 
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
@@ -47,10 +50,10 @@ class Model:
     def predict_policy(self, state):
         return self.session.run(self.out_policies, feed_dict={self.x_states: [state]})[0]
 
-    def save(self, path):
+    def save(self, path=GRAPH_FILEPATH):
         tf.train.Saver().save(self.session, path)
 
-    def restore(self, path):
+    def restore(self, path=GRAPH_FILEPATH):
         tf.train.Saver().restore(self.session, path)
 
 
@@ -61,12 +64,12 @@ if __name__ == '__main__':
 
     model = Model()
     if args.action == 'generate':
-        model.save(GRAPH_FILEPATH)
+        model.save()
     elif args.action == 'test':
         import gym
         import numpy as np
 
-        model.restore(GRAPH_FILEPATH)
+        model.restore()
 
         env = gym.make(ENV_ID)
         for _ in range(5):
