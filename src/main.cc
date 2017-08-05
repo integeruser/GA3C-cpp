@@ -87,6 +87,8 @@ void update(memory_t& memory, float& R, const experience_t& experience)
     // possible edge case - if an episode ends in <N steps, the computation is incorrect
 }
 
+/******************************************************************************/
+
 gym_uds::action_t pick_action(gym_uds::Environment& env, const gym_uds::observation_t& state, float epsilon)
 {
     if (std::uniform_real_distribution<float>(0.0f, 1.0f)(rand_engine) < epsilon) {
@@ -109,15 +111,15 @@ void agent(uint32_t i)
         gym_uds::observation_t curr_state, next_state;
         curr_state = env.reset();
 
-        float t = (float)training_steps_done / (NUM_TRAINING_STEPS-1);
-        float epsilon = (1-t)*EPSILON_START + t*EPSILON_END;
+        const float t = (float)training_steps_done / (NUM_TRAINING_STEPS-1);
+        const float epsilon = (1-t)*EPSILON_START + t*EPSILON_END;
 
         float reward = 0.0f;
         float episode_reward = 0.0f;
 
         bool done = false;
         while (!done) {
-            if (training_steps_done > NUM_TRAINING_STEPS) { return; }
+            if (training_steps_done >= NUM_TRAINING_STEPS) { return; }
 
             const auto action = pick_action(env, curr_state, epsilon);
             std::tie(next_state, reward, done) = env.step(action);
