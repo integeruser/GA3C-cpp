@@ -40,54 +40,6 @@ std::default_random_engine random_engine(random_device());
 
 /******************************************************************************/
 
-experience_t get_sample(const memory_t& memory, float R, uint32_t n)
-{
-    const auto curr_state = std::get<0>(memory[0]);
-    const auto action = std::get<1>(memory[0]);
-    const auto next_state = std::get<3>(memory[n-1]);
-    const auto done = std::get<4>(memory[n-1]);
-    return {curr_state, action, R, next_state, done};
-}
-
-void update(memory_t& memory, float& R, const experience_t& experience)
-{
-    gym_uds::observation_t curr_state, next_state;
-    gym_uds::action_t action;
-    float reward;
-    bool done;
-    std::tie(curr_state, action, reward, next_state, done) = experience;
-
-    memory.push_back({curr_state, action, reward, next_state, done});
-
-    R = (R + reward*std::pow(GAMMA, N_STEP_RETURN)) / GAMMA;
-
-    if (done) {
-        while (memory.size() > 0) {
-            const auto n = memory.size();
-            const auto experience = get_sample(memory, R, n);
-            experiences_queue.push(experience);
-
-            const auto reward = std::get<2>(memory[0]);
-            R = (R - reward) / GAMMA;
-            memory.pop_front();
-        }
-        R = 0.0f;
-    }
-
-    if (memory.size() >= N_STEP_RETURN) {
-        const auto experience = get_sample(memory, R, N_STEP_RETURN);
-        experiences_queue.push(experience);
-
-        const auto reward = std::get<2>(memory[0]);
-        R = (R - reward);
-        memory.pop_front();
-    }
-
-    // possible edge case - if an episode ends in <N steps, the computation is incorrect
-}
-
-/******************************************************************************/
-
 gym_uds::action_t pick_action(gym_uds::Environment& env, const gym_uds::observation_t& state, float epsilon)
 {
     if (std::uniform_real_distribution<float>(0.0f, 1.0f)(random_engine) < epsilon) {
@@ -99,13 +51,32 @@ gym_uds::action_t pick_action(gym_uds::Environment& env, const gym_uds::observat
     }
 }
 
+experience_t pick_experience(const memory_t& memory)
+{
+    const auto n = std::min<uint32_t>(N_STEP_RETURN, memory.size());
+
+    const auto curr_state = std::get<0>(memory[0]);
+    const auto action = std::get<1>(memory[0]);
+    float reward = 0.0f;
+    for (auto i = 0; i < n; ++i) {
+        const auto reward_i = std::get<2>(memory[i]);
+        reward += std::pow(GAMMA, i)*reward_i;
+    }
+
+    const auto next_state = std::get<3>(memory[n-1]);
+    const auto done = std::get<4>(memory[n-1]);
+    if (not done) {
+        reward += std::pow(GAMMA, n)*model.predict_reward(next_state);
+    }
+
+    return {curr_state, action, reward, next_state, done};
+}
+
 void agent(uint32_t i)
 {
     auto env = gym_uds::Environment("/tmp/gym-uds-socket-GA3C-" + std::to_string(i));
 
     memory_t memory;
-    float R = 0.0f;
-
     for (uint32_t episode = 1; true; ++episode) {
         gym_uds::observation_t curr_state, next_state;
         curr_state = env.reset();
@@ -117,7 +88,7 @@ void agent(uint32_t i)
         float episode_reward = 0.0f;
 
         bool done = false;
-        while (!done) {
+        while (not done) {
             if (num_training_experiences >= MAX_NUM_TRAINING_EXPERIENCES) { return; }
 
             const auto action = pick_action(env, curr_state, epsilon);
@@ -125,7 +96,13 @@ void agent(uint32_t i)
             episode_reward += reward;
 
             experience_t experience = {curr_state, action, reward, next_state, done};
-            update(memory, R, experience);
+            memory.push_back(experience);
+
+            while ((done and not memory.empty()) or (memory.size() >= N_STEP_RETURN)) {
+                const auto experience = pick_experience(memory);
+                experiences_queue.push(experience);
+                memory.pop_front();
+            }
 
             curr_state = next_state;
         }
@@ -141,18 +118,13 @@ void fit(const std::vector<experience_t>& batch)
     std::vector<float> rewards;
 
     for (const auto& experience: batch) {
-        gym_uds::observation_t curr_state, next_state;
-        gym_uds::action_t action;
-        float reward;
-        bool done;
-        std::tie(curr_state, action, reward, next_state, done) = experience;
-
+        const auto curr_state = std::get<0>(experience);
+        const auto action = std::get<1>(experience);
+        const auto reward = std::get<2>(experience);
         states.push_back(curr_state);
         actions.push_back(action);
-        if (!done) { reward += model.predict_reward(next_state)*std::pow(GAMMA, N_STEP_RETURN); }
         rewards.push_back(reward);
     }
-
     model.fit(states, actions, rewards);
 }
 
@@ -174,6 +146,8 @@ void trainer()
 
 int main(int argc, char const *argv[])
 {
+    assert (N_STEP_RETURN >= 1);
+
     // start the trainer
     auto trainer_thread = std::thread(trainer);
 
