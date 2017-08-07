@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-pkill -f gym-uds-server.py
-sleep 1
+cd $(dirname $(realpath $0))
+
+./stop-gym-uds-servers.sh
 
 ENV_ID="CartPole-v0"
 N=5
