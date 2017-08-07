@@ -7,8 +7,8 @@ ENV_ID = 'CartPole-v0'
 NUM_OBSERVATIONS = 4
 NUM_ACTIONS = 2
 
-LOSS_VALUE = 0.50
-LOSS_ENTROPY = 0.01
+LOSS_VALUE_COEFF = 0.50
+LOSS_ENTROPY_COEFF = 0.01
 
 LEARNING_RATE = 0.005
 DECAY = 0.99
@@ -28,21 +28,20 @@ class Model:
             inputs=hidden_layer, units=NUM_ACTIONS, activation=tf.nn.softmax, name='out_policies')
         self.out_values = tf.layers.dense(inputs=hidden_layer, units=1, name='out_values')
 
-        epsilon = 1e-10
+        EPSILON = 1e-10
 
         log_prob = tf.log(
-            tf.reduce_sum(self.y_policies * self.out_policies, axis=1, keep_dims=True) + epsilon)
+            tf.reduce_sum(self.y_policies * self.out_policies, axis=1, keep_dims=True) + EPSILON)
         advantage = self.y_values - self.out_values
 
         policy_loss = -log_prob * tf.stop_gradient(advantage)
-        value_loss = LOSS_VALUE * tf.square(advantage)
-        entropy = LOSS_ENTROPY * tf.reduce_sum(
-            self.y_policies * tf.log(self.y_policies + epsilon), axis=1, keep_dims=True)
+        value_loss = LOSS_VALUE_COEFF * tf.square(advantage)
+        entropy = LOSS_ENTROPY_COEFF * tf.reduce_sum(
+            self.y_policies * tf.log(self.y_policies + EPSILON), axis=1, keep_dims=True)
 
         total_loss = tf.reduce_mean(policy_loss + value_loss + entropy)
-        minimize_op = tf.train.RMSPropOptimizer(
-            LEARNING_RATE, decay=DECAY).minimize(
-                total_loss, name='minimize')
+        optimizer = tf.train.RMSPropOptimizer(LEARNING_RATE, decay=DECAY)
+        optimizer.minimize(total_loss, name='minimize')
 
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
