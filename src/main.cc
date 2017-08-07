@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
-#include <iostream>
 #include <random>
 #include <string>
 #include <thread>
@@ -130,7 +129,6 @@ void agent(uint32_t i)
 
             curr_state = next_state;
         }
-        std::cout << episode << ": " << episode_reward << std::endl;
     }
 }
 
