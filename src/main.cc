@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <iostream>
 #include <random>
 #include <string>
 #include <thread>
@@ -148,6 +149,8 @@ int main(int argc, char const *argv[])
 {
     assert (N_STEP_RETURN >= 1);
 
+    const auto start = std::chrono::steady_clock::now();
+
     // start the trainer
     auto trainer_thread = std::thread(trainer);
 
@@ -163,6 +166,10 @@ int main(int argc, char const *argv[])
     }
     trainer_thread.join();
     assert(num_training_experiences == MAX_NUM_TRAINING_EXPERIENCES);
+
+    const auto end = std::chrono::steady_clock::now();
+    const std::chrono::duration<float> duration = end-start;
+    std::cout << duration.count() << std::endl;
 
     // save the trained model
     model.save();
