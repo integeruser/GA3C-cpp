@@ -7,8 +7,10 @@ if [[ ! -d $TENSORFLOW_DIR ]] ; then
     exit 1
 fi
 
-rm -rf third-party
-mkdir -p third-party/third_party
+rm -rf third-party/google
+rm -rf third-party/tensorflow
+rm -rf third-party/third_party
+mkdir third-party/third_party
 
 cp -r $TENSORFLOW_DIR/tensorflow third-party
 cp -r $TENSORFLOW_DIR/bazel-genfiles/tensorflow third-party
@@ -17,4 +19,4 @@ cp -r $TENSORFLOW_DIR/third_party/eigen3 third-party/third_party
 cp -r $TENSORFLOW_DIR/bazel-tensorflow/external/eigen_archive/. third-party/third_party/eigen3
 cp -r third-party/third_party/eigen3/Eigen third-party/third_party
 
-gym-uds-api/build.sh $TENSORFLOW_DIR/bazel-out/host/bin/external/protobuf/protoc
+third-party/gym-uds-api/build.sh $TENSORFLOW_DIR/bazel-out/host/bin/external/protobuf/protoc

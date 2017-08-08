@@ -1,3 +1,5 @@
 bin/
 models/
-third-party/
+third-party/google/
+third-party/tensorflow/
+third-party/third_party/
