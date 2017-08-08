@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 cd $(dirname $(realpath $0))
 
+if [[ $# -ne 1 ]] ; then
+    echo "usage: build.sh TENSORFLOW_DIR"
+    exit 1
+fi
+
 TENSORFLOW_DIR=$1
 if [[ ! -d $TENSORFLOW_DIR ]] ; then
     echo "TENSORFLOW_DIR not found!"
