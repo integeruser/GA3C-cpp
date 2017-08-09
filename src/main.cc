@@ -44,9 +44,7 @@ std::default_random_engine random_engine(random_device());
 
 gym_uds::action_t pick_action(gym_uds::Environment& env, const gym_uds::observation_t& state, float epsilon)
 {
-    if (std::uniform_real_distribution<float>(0.0f, 1.0f)(random_engine) < epsilon) {
-        return env.sample();
-    }
+    if (std::uniform_real_distribution<float>(0.0f, 1.0f)(random_engine) < epsilon) { return env.sample(); }
     else {
         const auto actions_probs = model.predict_policy(state);
         return std::discrete_distribution<float>(actions_probs.cbegin(), actions_probs.cend())(random_engine);
@@ -67,9 +65,7 @@ experience_t pick_experience(const memory_t& memory)
 
     const auto next_state = std::get<3>(memory[n-1]);
     const auto done = std::get<4>(memory[n-1]);
-    if (not done) {
-        reward += std::pow(GAMMA, n)*model.predict_reward(next_state);
-    }
+    if (not done) { reward += std::pow(GAMMA, n)*model.predict_reward(next_state); }
 
     return {curr_state, action, reward, next_state, done};
 }
@@ -125,10 +121,11 @@ void fit(const std::vector<experience_t>& batch)
     std::vector<gym_uds::action_t> actions;
     std::vector<float> rewards;
 
-    for (const auto& experience: batch) {
+    for (const auto experience: batch) {
         const auto curr_state = std::get<0>(experience);
         const auto action = std::get<1>(experience);
         const auto reward = std::get<2>(experience);
+
         states.push_back(curr_state);
         actions.push_back(action);
         rewards.push_back(reward);
@@ -168,10 +165,8 @@ int main(int argc, char const *argv[])
 
     const auto start = std::chrono::steady_clock::now();
 
-    // start the trainer
+    // start the trainer and the agents
     auto trainer_thread = std::thread(trainer);
-
-    // start the agents
     auto agents_threads = std::vector<std::thread>(NUM_AGENTS);
     for (auto i = 0; i < NUM_AGENTS; ++i) {
         agents_threads[i] = std::thread(agent, i);
