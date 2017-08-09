@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <iomanip>
 #include <iostream>
 #include <random>
 #include <string>
@@ -106,6 +107,12 @@ void agent(uint32_t i)
             }
 
             curr_state = next_state;
+        }
+
+        if (episode % 10 == 0) {
+            std::cout << "[" << std::setfill('0') << std::setw(2) << i << "] "
+                      << "Ep. " << std::setfill('0') << std::setw(5) << episode << " "
+                      << "reward: " << episode_reward << std::endl;
         }
     }
 }
