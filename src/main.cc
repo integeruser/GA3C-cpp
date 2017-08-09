@@ -154,7 +154,17 @@ void trainer()
 
 int main(int argc, char const *argv[])
 {
-    assert (N_STEP_RETURN >= 1);
+    assert(NUM_AGENTS >= 0);
+    assert(MAX_NUM_TRAINING_EXPERIENCES >= 0);
+
+    assert(BATCH_SIZE >= 0);
+
+    assert(N_STEP_RETURN >= 1);
+    assert(GAMMA >= 0.0f and GAMMA <= 1.0f);
+
+    assert(EPSILON_START >= 0.0f and EPSILON_START <= 1.0f);
+    assert(EPSILON_END   >= 0.0f and EPSILON_END   <= 1.0f and EPSILON_END <= EPSILON_START);
+
 
     const auto start = std::chrono::steady_clock::now();
 
