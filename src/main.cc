@@ -175,8 +175,8 @@ int main(int argc, char const *argv[])
     assert(num_training_experiences == MAX_NUM_TRAINING_EXPERIENCES);
 
     const auto end = std::chrono::steady_clock::now();
-    const std::chrono::duration<float> duration = end-start;
-    std::cout << duration.count() << std::endl;
+    const std::chrono::duration<float> duration_s = end-start;
+    std::cout << "Training finished in " << duration_s.count() << " seconds" << std::endl;
 
     // save the trained model
     model.save();
