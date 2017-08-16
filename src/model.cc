@@ -105,7 +105,7 @@ std::vector<float> Model::predict_policy(const gym_uds::observation_t& state)
     return out_policies;
 }
 
-float Model::predict_reward(const gym_uds::observation_t& state)
+float Model::predict_value(const gym_uds::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_OBSERVATIONS});

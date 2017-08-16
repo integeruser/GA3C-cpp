@@ -29,7 +29,7 @@ class Model
                  const std::vector<float>&);
 
         std::vector<float> predict_policy(const gym_uds::observation_t&);
-        float predict_reward(const gym_uds::observation_t&);
+        float predict_value(const gym_uds::observation_t&);
 
         void save();
 };

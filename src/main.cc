@@ -65,16 +65,15 @@ experience_t pick_experience(const memory_t& memory)
 
     const auto next_state = std::get<3>(memory[n-1]);
     const auto done = std::get<4>(memory[n-1]);
-    if (not done) { reward += std::pow(GAMMA, n)*model.predict_reward(next_state); }
+    if (not done) { reward += std::pow(GAMMA, n)*model.predict_value(next_state); }
 
     return {curr_state, action, reward, next_state, done};
 }
 
-void agent(uint32_t i)
+void agent(uint32_t id)
 {
-    auto env = gym_uds::Environment("/tmp/gym-uds-socket-GA3C-" + std::to_string(i));
+    auto env = gym_uds::Environment("/tmp/gym-uds-socket-GA3C-" + std::to_string(id));
 
-    memory_t memory;
     for (uint32_t episode = 1; true; ++episode) {
         gym_uds::observation_t curr_state, next_state;
         curr_state = env.reset();
@@ -82,6 +81,7 @@ void agent(uint32_t i)
         const float t = (float)num_training_experiences / (MAX_NUM_TRAINING_EXPERIENCES-1);
         const float epsilon = (1-t)*EPSILON_START + t*EPSILON_END;
 
+        memory_t memory;
         float reward = 0.0f;
         float episode_reward = 0.0f;
 
@@ -106,7 +106,7 @@ void agent(uint32_t i)
         }
 
         if (episode % 10 == 0) {
-            std::cout << "[" << std::setfill('0') << std::setw(2) << i << "] "
+            std::cout << "[" << std::setfill('0') << std::setw(2) << id << "] "
                       << "Ep. " << std::setfill('0') << std::setw(5) << episode << " "
                       << "reward: " << episode_reward << std::endl;
         }
