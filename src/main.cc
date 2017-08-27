@@ -57,17 +57,17 @@ experience_t pick_experience(const memory_t& memory)
 
     const auto curr_state = std::get<0>(memory[0]);
     const auto action = std::get<1>(memory[0]);
-    float reward = 0.0f;
-    for (auto i = 0; i < n; ++i) {
-        const auto reward_i = std::get<2>(memory[i]);
-        reward += std::pow(GAMMA, i)*reward_i;
+    float n_step_return = 0.0f;
+    for (auto t = 0; t < n; ++t) {
+        const auto reward = std::get<2>(memory[t]);
+        n_step_return += std::pow(GAMMA, t)*reward;
     }
 
     const auto next_state = std::get<3>(memory[n-1]);
     const auto done = std::get<4>(memory[n-1]);
-    if (not done) { reward += std::pow(GAMMA, n)*model.predict_value(next_state); }
+    if (not done) { n_step_return += std::pow(GAMMA, n)*model.predict_value(next_state); }
 
-    return {curr_state, action, reward, next_state, done};
+    return {curr_state, action, n_step_return, next_state, done};
 }
 
 void agent(uint32_t id)
