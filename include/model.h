@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "gym-uds.h"
@@ -28,8 +29,7 @@ class Model
                  const std::vector<gym_uds::action_t>&,
                  const std::vector<float>&);
 
-        std::vector<float> predict_policy(const gym_uds::observation_t&);
-        float predict_value(const gym_uds::observation_t&);
+        std::pair<std::vector<float>, float> predict_policy_and_value(const gym_uds::observation_t&);
 
         void save();
 };

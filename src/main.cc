@@ -42,7 +42,7 @@ std::default_random_engine random_engine(random_device());
 
 /******************************************************************************/
 
-gym_uds::action_t select_action(gym_uds::Environment& env, const gym_uds::observation_t& state, float epsilon)
+gym_uds::action_t select_action(gym_uds::Environment& env, float epsilon, const std::vector<float>& policy)
 {
     const bool should_explore = std::uniform_real_distribution<float>(0.0f, 1.0f)(random_engine) < epsilon;
     if (should_explore) {
@@ -51,12 +51,11 @@ gym_uds::action_t select_action(gym_uds::Environment& env, const gym_uds::observ
     }
     else {
         // perform an action according to the current policy
-        const auto policy = model.predict_policy(state);
         return std::discrete_distribution<float>(policy.cbegin(), policy.cend())(random_engine);
     }
 }
 
-experience_t extract_accumulated_experience(memory_t& memory)
+experience_t extract_accumulated_experience(memory_t& memory, float next_state_value)
 {
     assert(not memory.empty());
     const auto n = std::min<uint32_t>(N_STEP_RETURN, memory.size());
@@ -74,7 +73,7 @@ experience_t extract_accumulated_experience(memory_t& memory)
     }
     const auto next_state = std::get<3>(memory[n-1]);
     const auto done = std::get<4>(memory[n-1]);
-    if (not done) { n_step_return += std::pow(GAMMA, n)*model.predict_value(next_state); }
+    if (not done) { n_step_return += std::pow(GAMMA, n)*next_state_value; }
 
     memory.pop_front();
     return {curr_state, action, n_step_return, next_state, done};
@@ -101,7 +100,13 @@ void agent(uint32_t id)
             // stop training after reaching a fixed number of training experiences
             if (num_training_experiences >= MAX_NUM_TRAINING_EXPERIENCES) { return; }
 
-            const auto action = select_action(env, curr_state, epsilon);
+            // predict policy and value
+            std::vector<float> policy;
+            float value;
+            std::tie(policy, value) = model.predict_policy_and_value(curr_state);
+
+            // select and perform an action
+            const auto action = select_action(env, epsilon, policy);
             std::tie(next_state, reward, done) = env.step(action);
             episode_reward += reward;
 
@@ -112,7 +117,7 @@ void agent(uint32_t id)
             // - enough of them are accumulated in memory and the n-step return can be computed
             // - the episode is over and the memory is not empty
             while ((memory.size() >= N_STEP_RETURN) or (done and not memory.empty())) {
-                const auto experience = extract_accumulated_experience(memory);
+                const auto experience = extract_accumulated_experience(memory, value);
                 training_experiences_queue.push(experience);
             }
 

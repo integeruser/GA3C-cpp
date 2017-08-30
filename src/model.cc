@@ -82,7 +82,7 @@ void Model::fit(const std::vector<gym_uds::observation_t>& states,
 }
 
 
-std::vector<float> Model::predict_policy(const gym_uds::observation_t& state)
+std::pair<std::vector<float>, float> Model::predict_policy_and_value(const gym_uds::observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_OBSERVATIONS});
@@ -93,35 +93,19 @@ std::vector<float> Model::predict_policy(const gym_uds::observation_t& state)
         {"x_states", {state_tensor}}
     };
     std::vector<tf::Tensor> outputs;
-    TF_CHECK_OK(session->Run(inputs, {"out_policies/Softmax:0"}, {}, &outputs));
+    TF_CHECK_OK(session->Run(inputs, {"out_policies/Softmax:0", "out_values/BiasAdd:0"}, {}, &outputs));
 
-    const auto out_policies_eigentensor = outputs[0].flat<float>();
-    std::vector<float> out_policies(out_policies_eigentensor.size());
-    for (auto i = 0; i < out_policies.size(); ++i) {
-        out_policies[i] = out_policies_eigentensor(i);
+    const auto out_policy_eigentensor = outputs[0].flat<float>();
+    std::vector<float> out_policy(out_policy_eigentensor.size());
+    for (auto i = 0; i < out_policy.size(); ++i) {
+        out_policy[i] = out_policy_eigentensor(i);
     }
-    const auto sum = std::accumulate(out_policies.cbegin(), out_policies.cend(), 0.0f);
-    assert(sum > 0.99f and sum < 1.01f);
-    return out_policies;
+    const auto probabilities_sum = std::accumulate(out_policy.cbegin(), out_policy.cend(), 0.0f);
+    assert(probabilities_sum > 0.99f and probabilities_sum < 1.01f);
+
+    const float out_value = outputs[1].scalar<float>()();
+    return {out_policy, out_value};
 }
-
-float Model::predict_value(const gym_uds::observation_t& state)
-{
-    // fill the state tensor
-    auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_OBSERVATIONS});
-    std::copy_n(state.cbegin(), state.size(), state_tensor.flat<float>().data());
-
-    // predict output
-    std::vector<std::pair<tf::string, tf::Tensor>> inputs = {
-        {"x_states", {state_tensor}}
-    };
-    std::vector<tf::Tensor> outputs;
-    TF_CHECK_OK(session->Run(inputs, {"out_values/BiasAdd:0"}, {}, &outputs));
-
-    const float reward = outputs[0].scalar<float>()();
-    return reward;
-}
-
 
 void Model::save()
 {
