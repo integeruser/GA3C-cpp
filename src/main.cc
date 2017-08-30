@@ -34,7 +34,7 @@ const float EPSILON_END   = 0.15f;
 
 
 Model model;
-Queue<experience_t> experiences_queue;
+Queue<experience_t> training_experiences_queue;
 uint32_t num_training_experiences = 0;
 
 std::random_device random_device;
@@ -42,31 +42,41 @@ std::default_random_engine random_engine(random_device());
 
 /******************************************************************************/
 
-gym_uds::action_t pick_action(gym_uds::Environment& env, const gym_uds::observation_t& state, float epsilon)
+gym_uds::action_t select_action(gym_uds::Environment& env, const gym_uds::observation_t& state, float epsilon)
 {
-    if (std::uniform_real_distribution<float>(0.0f, 1.0f)(random_engine) < epsilon) { return env.sample(); }
+    const bool should_explore = std::uniform_real_distribution<float>(0.0f, 1.0f)(random_engine) < epsilon;
+    if (should_explore) {
+        // perform a random action
+        return env.sample();
+    }
     else {
-        const auto actions_probs = model.predict_policy(state);
-        return std::discrete_distribution<float>(actions_probs.cbegin(), actions_probs.cend())(random_engine);
+        // perform an action according to the current policy
+        const auto policy = model.predict_policy(state);
+        return std::discrete_distribution<float>(policy.cbegin(), policy.cend())(random_engine);
     }
 }
 
-experience_t pick_experience(const memory_t& memory)
+experience_t extract_accumulated_experience(memory_t& memory)
 {
+    assert(not memory.empty());
     const auto n = std::min<uint32_t>(N_STEP_RETURN, memory.size());
 
-    const auto curr_state = std::get<0>(memory[0]);
-    const auto action = std::get<1>(memory[0]);
+    // pick experience at time step t
+    auto t = 0;
+    const auto curr_state = std::get<0>(memory[t]);
+    const auto action = std::get<1>(memory[t]);
+
+    // and calculate its n-step return (until time step t+n)
     float n_step_return = 0.0f;
-    for (auto t = 0; t < n; ++t) {
+    for (; t < n; ++t) {
         const auto reward = std::get<2>(memory[t]);
         n_step_return += std::pow(GAMMA, t)*reward;
     }
-
     const auto next_state = std::get<3>(memory[n-1]);
     const auto done = std::get<4>(memory[n-1]);
     if (not done) { n_step_return += std::pow(GAMMA, n)*model.predict_value(next_state); }
 
+    memory.pop_front();
     return {curr_state, action, n_step_return, next_state, done};
 }
 
@@ -75,11 +85,12 @@ void agent(uint32_t id)
     auto env = gym_uds::Environment("/tmp/gym-uds-socket-GA3C-" + std::to_string(id));
 
     for (uint32_t episode = 1; true; ++episode) {
-        gym_uds::observation_t curr_state, next_state;
-        curr_state = env.reset();
-
         const float t = (float)num_training_experiences / (MAX_NUM_TRAINING_EXPERIENCES-1);
         const float epsilon = (1-t)*EPSILON_START + t*EPSILON_END;
+
+        // reset the environment starting a new episode
+        gym_uds::observation_t curr_state, next_state;
+        curr_state = env.reset();
 
         memory_t memory;
         float reward = 0.0f;
@@ -87,19 +98,22 @@ void agent(uint32_t id)
 
         bool done = false;
         while (not done) {
+            // stop training after reaching a fixed number of training experiences
             if (num_training_experiences >= MAX_NUM_TRAINING_EXPERIENCES) { return; }
 
-            const auto action = pick_action(env, curr_state, epsilon);
+            const auto action = select_action(env, curr_state, epsilon);
             std::tie(next_state, reward, done) = env.step(action);
             episode_reward += reward;
 
             experience_t experience = {curr_state, action, reward, next_state, done};
             memory.push_back(experience);
 
-            while ((done and not memory.empty()) or (memory.size() >= N_STEP_RETURN)) {
-                const auto experience = pick_experience(memory);
-                experiences_queue.push(experience);
-                memory.pop_front();
+            // add experiences to the training queue when:
+            // - enough of them are accumulated in memory and the n-step return can be computed
+            // - the episode is over and the memory is not empty
+            while ((memory.size() >= N_STEP_RETURN) or (done and not memory.empty())) {
+                const auto experience = extract_accumulated_experience(memory);
+                training_experiences_queue.push(experience);
             }
 
             curr_state = next_state;
@@ -140,7 +154,7 @@ void trainer()
 
         auto batch = std::vector<experience_t>(batch_size);
         for (auto i = 0; i < batch.size(); ++i) {
-            batch[i] = experiences_queue.pop();
+            batch[i] = training_experiences_queue.pop();
         }
         fit(batch);
         num_training_experiences += batch_size;
