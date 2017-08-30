@@ -18,6 +18,7 @@
 #include "queue.h"
 
 using experience_t = std::tuple<gym_uds::observation_t, gym_uds::action_t, float, gym_uds::observation_t, bool>;
+using training_experience_t = std::tuple<gym_uds::observation_t, gym_uds::action_t, float>;
 using memory_t = std::deque<experience_t>;
 
 
@@ -34,7 +35,7 @@ const float EPSILON_END   = 0.15f;
 
 
 Model model;
-Queue<experience_t> training_experiences_queue;
+Queue<training_experience_t> training_experiences_queue;
 uint32_t num_training_experiences = 0;
 
 std::random_device random_device;
@@ -55,7 +56,7 @@ gym_uds::action_t select_action(gym_uds::Environment& env, float epsilon, const 
     }
 }
 
-experience_t extract_accumulated_experience(memory_t& memory, float next_state_value)
+training_experience_t extract_accumulated_experience(memory_t& memory, float next_state_value)
 {
     assert(not memory.empty());
     const auto n = std::min<uint32_t>(N_STEP_RETURN, memory.size());
@@ -71,12 +72,11 @@ experience_t extract_accumulated_experience(memory_t& memory, float next_state_v
         const auto reward = std::get<2>(memory[t]);
         n_step_return += std::pow(GAMMA, t)*reward;
     }
-    const auto next_state = std::get<3>(memory[n-1]);
     const auto done = std::get<4>(memory[n-1]);
     if (not done) { n_step_return += std::pow(GAMMA, n)*next_state_value; }
 
     memory.pop_front();
-    return {curr_state, action, n_step_return, next_state, done};
+    return {curr_state, action, n_step_return};
 }
 
 void agent(uint32_t id)
@@ -117,8 +117,8 @@ void agent(uint32_t id)
             // - enough of them are accumulated in memory and the n-step return can be computed
             // - the episode is over and the memory is not empty
             while ((memory.size() >= N_STEP_RETURN) or (done and not memory.empty())) {
-                const auto experience = extract_accumulated_experience(memory, value);
-                training_experiences_queue.push(experience);
+                const auto training_experience = extract_accumulated_experience(memory, value);
+                training_experiences_queue.push(training_experience);
             }
 
             curr_state = next_state;
@@ -134,18 +134,18 @@ void agent(uint32_t id)
 
 /******************************************************************************/
 
-void fit(const std::vector<experience_t>& batch)
+void fit(const std::vector<training_experience_t>& batch)
 {
     std::vector<gym_uds::observation_t> states;
     std::vector<gym_uds::action_t> actions;
     std::vector<float> rewards;
 
-    for (const auto experience: batch) {
-        const auto curr_state = std::get<0>(experience);
-        const auto action = std::get<1>(experience);
-        const auto reward = std::get<2>(experience);
-
-        states.push_back(curr_state);
+    gym_uds::observation_t state;
+    gym_uds::action_t action;
+    float reward;
+    for (const auto& experience: batch) {
+        std::tie(state, action, reward) = experience;
+        states.push_back(state);
         actions.push_back(action);
         rewards.push_back(reward);
     }
@@ -157,7 +157,7 @@ void trainer()
     while (num_training_experiences < MAX_NUM_TRAINING_EXPERIENCES) {
         const auto batch_size = std::min(BATCH_SIZE, MAX_NUM_TRAINING_EXPERIENCES-num_training_experiences);
 
-        auto batch = std::vector<experience_t>(batch_size);
+        auto batch = std::vector<training_experience_t>(batch_size);
         for (auto i = 0; i < batch.size(); ++i) {
             batch[i] = training_experiences_queue.pop();
         }
