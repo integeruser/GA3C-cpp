@@ -1,38 +1,25 @@
 #ifndef MODEL_H
 #define MODEL_H
 
-#include <memory>
-#include <string>
 #include <utility>
 #include <vector>
 
-#include "gym-uds.h"
-#include "tensorflow/core/protobuf/meta_graph.pb.h"
-#include "tensorflow/core/public/session.h"
-
-namespace tf = tensorflow;
+#include "environment.h"
 
 
 class Model
 {
-    private:
-        const std::string GRAPH_FILEPATH = "models/graph";
-        const std::string META_GRAPH_FILEPATH = "models/graph.meta";
-
-        tf::MetaGraphDef meta_graph_def;
-        std::unique_ptr<tf::Session> session;
-
     public:
-        Model();
+        Model() {}
 
-        void fit(const std::vector<gym_uds::observation_t>&,
-                 const std::vector<gym_uds::action_t>&,
-                 const std::vector<float>&);
+        virtual void fit(const std::vector<observation_t>&,
+                         const std::vector<action_t>&,
+                         const std::vector<float>&) {}
 
-        std::pair<std::vector<float>, float> predict_policy_and_value(const gym_uds::observation_t&);
+        virtual std::pair<std::vector<float>, float> predict_policy_and_value(const observation_t&) { return {}; }
 
-        void save();
+        virtual void save() {}
 };
 
 
-#endif
+#endif // MODEL_H

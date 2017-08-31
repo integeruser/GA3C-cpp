@@ -1,4 +1,4 @@
-#include "model.h"
+#include "model-cartpole-v0.h"
 
 #include <algorithm>
 #include <cassert>
@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 
-#include "gym-uds.h"
 #include "tensorflow/core/framework/tensor.h"
 #include "tensorflow/core/protobuf/meta_graph.pb.h"
 #include "tensorflow/core/public/session.h"
@@ -16,7 +15,7 @@ const uint32_t NUM_OBSERVATIONS = 4;
 const uint32_t NUM_ACTIONS = 2;
 
 
-std::vector<float> one_hot_encode(gym_uds::action_t action)
+std::vector<float> one_hot_encode(action_t action)
 {
     std::vector<float> encoded_action(NUM_ACTIONS, 0.0f);
     encoded_action[action] = 1.0f;
@@ -24,7 +23,7 @@ std::vector<float> one_hot_encode(gym_uds::action_t action)
 }
 
 
-Model::Model():
+CartPoleModel::CartPoleModel():
     session(tf::NewSession( {}))
 {
     TF_CHECK_OK(ReadBinaryProto(tf::Env::Default(), META_GRAPH_FILEPATH, &meta_graph_def));
@@ -41,9 +40,9 @@ Model::Model():
 }
 
 
-void Model::fit(const std::vector<gym_uds::observation_t>& states,
-                const std::vector<gym_uds::action_t>& actions,
-                const std::vector<float>& rewards)
+void CartPoleModel::fit(const std::vector<observation_t>& states,
+                        const std::vector<action_t>& actions,
+                        const std::vector<float>& rewards)
 {
     assert(states.size() == actions.size() and actions.size() == rewards.size());
 
@@ -82,7 +81,7 @@ void Model::fit(const std::vector<gym_uds::observation_t>& states,
 }
 
 
-std::pair<std::vector<float>, float> Model::predict_policy_and_value(const gym_uds::observation_t& state)
+std::pair<std::vector<float>, float> CartPoleModel::predict_policy_and_value(const observation_t& state)
 {
     // fill the state tensor
     auto state_tensor = tf::Tensor(tf::DT_FLOAT, {1, NUM_OBSERVATIONS});
@@ -107,7 +106,7 @@ std::pair<std::vector<float>, float> Model::predict_policy_and_value(const gym_u
     return {out_policy, out_value};
 }
 
-void Model::save()
+void CartPoleModel::save()
 {
     auto graph_filepath_tensor = tf::Tensor(tf::DT_STRING, {});
     graph_filepath_tensor.scalar<tf::string>()() = GRAPH_FILEPATH;

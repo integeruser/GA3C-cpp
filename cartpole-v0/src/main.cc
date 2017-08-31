@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include "environment.h"
-#include "model.h"
+#include "environment-cartpole-v0.h"
+#include "model-cartpole-v0.h"
 
 
 extern void train(std::shared_ptr<Model>, const std::vector<std::shared_ptr<Environment>>&);
@@ -19,10 +19,10 @@ int main(int argc, char const *argv[])
     const auto start = std::chrono::steady_clock::now();
 
     // train the model
-    auto model = std::make_shared<Model>();
+    auto model = std::make_shared<CartPoleModel>();
     std::vector<std::shared_ptr<Environment>> environments;
     for (auto id = 0; id < NUM_AGENTS; ++id) {
-        auto env = std::make_shared<Environment>();
+        auto env = std::make_shared<CartPoleEnvironment>(id);
         environments.push_back(env);
     }
     train(model, environments);
