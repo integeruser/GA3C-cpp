@@ -52,7 +52,7 @@ action_t select_action(std::shared_ptr<Environment> env, float epsilon, const st
     }
     else {
         // perform an action according to the current policy
-        return std::discrete_distribution<float>(policy.cbegin(), policy.cend())(random_engine);
+        return std::discrete_distribution<action_t>(policy.cbegin(), policy.cend())(random_engine);
     }
 }
 
