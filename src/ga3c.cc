@@ -62,7 +62,7 @@ training_experience_t extract_accumulated_experience(memory_t& memory, float nex
     const auto n = std::min<uint32_t>(N_STEP_RETURN, memory.size());
 
     // pick experience at time step t
-    auto t = 0;
+    uint32_t t = 0;
     const auto curr_state = std::get<0>(memory[t]);
     const auto action = std::get<1>(memory[t]);
 
@@ -156,7 +156,7 @@ void trainer()
         const auto batch_size = std::min(BATCH_SIZE, MAX_NUM_TRAINING_EXPERIENCES-num_training_experiences);
 
         auto batch = std::vector<training_experience_t>(batch_size);
-        for (auto i = 0; i < batch.size(); ++i) {
+        for (uint32_t i = 0; i < batch.size(); ++i) {
             batch[i] = training_experiences_queue.pop();
         }
         fit(batch);
@@ -185,12 +185,12 @@ void train(std::shared_ptr<Model> model, const std::vector<std::shared_ptr<Envir
     // start the trainer and the agents
     auto trainer_thread = std::thread(trainer);
     auto agents_threads = std::vector<std::thread>(NUM_AGENTS);
-    for (auto id = 0; id < NUM_AGENTS; ++id) {
+    for (uint32_t id = 0; id < NUM_AGENTS; ++id) {
         agents_threads[id] = std::thread(agent, id, environments[id]);
     }
 
     // and wait for them to finish
-    for (auto id = 0; id < NUM_AGENTS; ++id) {
+    for (uint32_t id = 0; id < NUM_AGENTS; ++id) {
         agents_threads[id].join();
     }
     trainer_thread.join();

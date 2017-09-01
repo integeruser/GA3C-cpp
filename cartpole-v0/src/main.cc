@@ -21,7 +21,7 @@ int main(int argc, char const *argv[])
     // train the model
     auto model = std::make_shared<CartPoleModel>();
     std::vector<std::shared_ptr<Environment>> environments;
-    for (auto id = 0; id < NUM_AGENTS; ++id) {
+    for (uint32_t id = 0; id < NUM_AGENTS; ++id) {
         auto env = std::make_shared<CartPoleEnvironment>(id);
         environments.push_back(env);
     }
