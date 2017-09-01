@@ -15,7 +15,7 @@ Do not delete the TensorFlow repository before running the installation steps be
 ## Installation
 ##### (only for testing the code on `CartPole-v0`)
 1. Recursively clone this repository, i.e. `git clone --recursive https://github.com/integeruser/GA3C-cpp.git`
-2. Run `cartpole-v0/build.sh <path_to_tensorflow_repository>` to copy the necessary C++ headers and sources into `cartpole-v0/third-party/`
+2. Run `cartpole-v0/build.sh <absolute_path_to_tensorflow_repository>` to copy the necessary C++ headers and sources into `cartpole-v0/third-party/`
 
 ## Usage
 To try the code in an empty environment and on an empty model, just compile `GA3C` and run it (no dependencies):
