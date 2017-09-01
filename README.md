@@ -8,7 +8,7 @@ This project requires any recent version of Google's TensorFlow. The steps for b
 2. Switch to a stable release using e.g. `git checkout r1.3`
 4. Run `./configure`
 5. Build the shared library for C++ using `bazel build --config=opt //tensorflow:libtensorflow_cc.so`
-6. Copy `bazel-bin/tensorflow/libtensorflow_cc.so` to any directory searched by the run-time loader, e.g. `/usr/local/lib/`
+6. Copy `bazel-bin/tensorflow/libtensorflow_cc.so` to any directory searched by the run-time loader
 
 Do not delete the TensorFlow repository before running the installation steps below. Lastly, use pip to install the `tensorflow` and `gym` packages for Python 3.
 
