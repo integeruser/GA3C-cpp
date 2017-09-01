@@ -1,5 +1,6 @@
 bin/
-models/
-third-party/google/
-third-party/tensorflow/
-third-party/third_party/
+cartpole-v0/bin/
+cartpole-v0/models/
+cartpole-v0/third-party/google/
+cartpole-v0/third-party/tensorflow/
+cartpole-v0/third-party/third_party/
