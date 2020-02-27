@@ -76,7 +76,7 @@ training_experience_t extract_accumulated_experience(memory_t& memory, float nex
     if (not done) { n_step_return += std::pow(GAMMA, n)*next_state_value; }
 
     memory.pop_front();
-    return {curr_state, action, n_step_return};
+    return training_experience_t{curr_state, action, n_step_return};
 }
 
 void agent(uint32_t id, std::shared_ptr<Environment> env)
@@ -108,7 +108,7 @@ void agent(uint32_t id, std::shared_ptr<Environment> env)
             std::tie(next_state, reward, done) = env->step(action);
             episode_reward += reward;
 
-            experience_t experience = {curr_state, action, reward, next_state, done};
+            experience_t experience = experience_t{curr_state, action, reward, next_state, done};
             memory.push_back(experience);
 
             // add experiences to the training queue when:
