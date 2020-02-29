@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-cd $(dirname $(realpath $0))
+dirname () { python -c "import os; print(os.path.dirname(os.path.realpath('$0')))"; }
+cd "$(dirname "$0")"
 
 while [[ $(pgrep -f gym-uds-server.py) ]] ; do
     pkill -f gym-uds-server.py
