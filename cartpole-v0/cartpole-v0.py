@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import argparse
 
+import dlib
 import tensorflow as tf
 
 ENV_ID = 'CartPole-v0'
