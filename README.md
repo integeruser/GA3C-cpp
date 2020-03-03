@@ -39,6 +39,8 @@ This project requires building TensorFlow 1.3 from sources. Example instructions
 
         tensorflow$ env PATH="$HOME/bin:$PATH" JAVA_HOME="/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home" bazel build //tensorflow:libtensorflow_cc.so
 
+    Building may fail if (an incompatible version of) [protobuf](https://github.com/protocolbuffers/protobuf) was already installed in the machine, in which case you need to make sure that TensoFlow builds and uses its internal version of protobuf instead.
+
 1. Build and install the TensorFlow pip package:
 
         tensorflow$ env PATH="$HOME/bin:$PATH" JAVA_HOME="/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home" bazel build //tensorflow/tools/pip_package:build_pip_package
