@@ -52,9 +52,9 @@ This project requires building TensorFlow 1.3 from sources. Example instructions
         $ $HOME/.pyenv/versions/3.6.10/bin/pip install gym
 
 ## Installation
-1. Recursively clone this repository:
+1. Clone this repository:
 
-        $ git clone --recursive https://github.com/integeruser/GA3C-cpp.git
+        $ git clone https://github.com/integeruser/GA3C-cpp.git
 
 1. `cd` to the `GA3C-cpp` directory and compile the code for testing on CartPole-v0:
 

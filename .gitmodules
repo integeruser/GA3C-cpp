@@ -1,3 +1,0 @@
-[submodule "gym-uds-api"]
-	path = cartpole-v0/third-party/gym-uds-api
-	url = https://github.com/integeruser/gym-uds-api.git
